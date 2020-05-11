@@ -1,24 +1,30 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useEffect, useState, useRef } from 'react';
+import { Machine, interpret } from 'xstate';
+import trafficLightFSM from './fsm/trafficLightFSM.js';
+
+import Light from './components/Light.js';
 
 function App() {
+  const lightMachine = Machine(trafficLightFSM);
+  // lightMachine obj keep changing, so we need machineRef to ensure use effect run only once
+  const machineRef = useRef(lightMachine);
+  const [light, setLight] = useState(machineRef.current.initialState);
+
+  useEffect(()=> {
+    const service = interpret(machineRef.current).onTransition(state => {
+      setLight(state.value);
+    });
+    service.start();
+    return () => {
+      service.stop();
+    }
+  }, [machineRef])
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="App" style={{background: 'black'}}>
+      <Light light={light === 'red' ? light : 'grey'}/>
+      <Light light={light === 'yellow' ? light : 'grey'}/>
+      <Light light={light === 'green' ? light : 'grey'}/>
     </div>
   );
 }
